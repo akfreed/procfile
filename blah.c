@@ -7,31 +7,36 @@ MODULE_AUTHOR("Humphrey Winnebago");
 MODULE_LICENSE("GPL");
 
 #define PROC_NAME "blah"
+#define TASKSIZE 2048
+
+static unsigned m_numTasks = 5;
 
 static void* seq_start(struct seq_file* unused_s, loff_t* pos) {
-    static unsigned long counter = 0;
+    static unsigned task = 0;
 
-    printk(KERN_INFO "Start. Count: %lu. Pos: %lld\n", counter, *pos);
+    printk(KERN_INFO "Start. Task: %u. Pos: %lld\n", task, *pos);
 
-	if (*pos < 10000) {	
-		return &counter;
+	if (task < m_numTasks) {
+		return &task;
 	}
     
     *pos = 0;
-    counter = 0;
+    task = 0;
     return NULL;
 }
 
 static void* seq_next(struct seq_file* unused_s, void* v, loff_t* pos) {
-	unsigned long* tmp_v = (unsigned long*)v;
-	*tmp_v += 1;
-	*pos += 1;
+	unsigned* pTask = (unsigned*)v;
 
     printk(KERN_INFO "Next. Pos: %lld\n", *pos);
 
-    if (*pos < 10000) {
-       return v;
+    *pos += TASKSIZE;
+    *pTask += 1;
+
+    if (*pTask < m_numTasks) {
+        return pTask;
     }
+
 	return NULL;
 }
 
@@ -40,9 +45,10 @@ static void seq_stop(struct seq_file* unused_s, void* unused_v) {
 }
 
 static int seq_show(struct seq_file* s, void* v) {
-    if (v) {
-        loff_t* spos = (loff_t*)v;
-        seq_printf(s, "%Ld\n", *spos);
+    unsigned long* pTask = (unsigned long*)v;
+    int i = 0;
+    for (i = 0; i < TASKSIZE; ++i) {
+        seq_printf(s, "%c", 'a' + (char)*pTask);
     }
     return 0;
 }
